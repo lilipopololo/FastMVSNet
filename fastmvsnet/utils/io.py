@@ -6,7 +6,7 @@ import errno
 import pickle
 import cv2
 import torch
-
+import os.path as osp
 
 def mkdir(path):
     os.makedirs(path, exist_ok=True)
@@ -53,9 +53,7 @@ def load_cam_dtu(file, num_depth=0, interval_scale=1.0):
 
 
 def write_cam_dtu(file, cam):
-    # f = open(file, "w")
-    f = open(file, "w")
-
+    f = open(file, 'w')
     f.write('extrinsic\n')
     for i in range(0, 4):
         for j in range(0, 4):

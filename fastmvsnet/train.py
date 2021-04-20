@@ -4,6 +4,7 @@ import os.path as osp
 import logging
 import time
 import sys
+
 sys.path.insert(0, osp.dirname(__file__) + '/..')
 
 import torch
@@ -27,7 +28,7 @@ def parse_args():
     parser.add_argument(
         "--cfg",
         dest="config_file",
-        default="",
+        default="../configs/dtu.yaml",
         metavar="FILE",
         help="path to config file",
         type=str,

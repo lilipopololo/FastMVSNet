@@ -10,26 +10,40 @@ from fastmvsnet.utils.io import mkdir, write_cam_dtu, write_pfm
 
 
 def eval_file_logger(data_batch, preds, ref_img_path, folder, scene_name_index=-2, out_index_minus=1, save_prob_volume=False):
+    ref_img_path = ref_img_path.replace('\\', '/')
     l = ref_img_path.split("/")
-    eval_folder = "/".join(l[:-3])
+    # eval_folder = "/".join(l[:-3])
+    eval_folder = "/".join(l[:-2])
 
     scene = l[scene_name_index]
 
-    scene_folder = osp.join(eval_folder, folder, scene)
+    # scene_folder = osp.join(eval_folder, folder, scene)
+    scene_folder = osp.join(eval_folder+"/test/", scene)
 
     if not osp.isdir(scene_folder):
         mkdir(scene_folder)
-        print("**** {} ****".format(scene))
-
+        print("**** {} ****".format(scene_folder))
+    if not osp.isdir(scene_folder+"/init_depth_map/"):
+        mkdir(scene_folder+"/init_depth_map/")
+        print("**** {} ****".format(scene_folder+"/init_depth_map/"))
+    if not osp.isdir(scene_folder+"/init_prob_map/"):
+        mkdir(scene_folder+"/init_prob_map/")
+        print("**** {} ****".format(scene_folder+"/init_prob_map/"))
+    if not osp.isdir(scene_folder+"/out_ref_image/"):
+        mkdir(scene_folder+"/out_ref_image/")
+        print("**** {} ****".format(scene_folder+"/out_ref_image/"))
     out_index = int(l[-1][5:8]) - out_index_minus
 
     cam_params_list = data_batch["cam_params_list"].cpu().numpy()
 
     ref_cam_paras = cam_params_list[0, 0, :, :, :]
 
-    init_depth_map_path = scene_folder + ('/%08d_init.pfm' % out_index)
-    init_prob_map_path = scene_folder + ('/%08d_init_prob.pfm' % out_index)
-    out_ref_image_path = scene_folder + ('/%08d.jpg' % out_index)
+    # init_depth_map_path = scene_folder + ('/%08d_init.pfm' % out_index)
+    # init_prob_map_path = scene_folder + ('/%08d_init_prob.pfm' % out_index)
+    # out_ref_image_path = scene_folder + ('/%08d.jpg' % out_index)
+    init_depth_map_path = scene_folder + ('/init_depth_map/%08d_init.pfm' % out_index)
+    init_prob_map_path = scene_folder + ('/init_prob_map/%08d_init_prob.pfm' % out_index)
+    out_ref_image_path = scene_folder + ('/out_ref_image/%08d.jpg' % out_index)
 
     init_depth_map = preds["coarse_depth_map"].cpu().numpy()[0, 0]
     init_prob_map = preds["coarse_prob_map"].cpu().numpy()[0, 0]
@@ -37,9 +51,13 @@ def eval_file_logger(data_batch, preds, ref_img_path, folder, scene_name_index=-
 
     write_pfm(init_depth_map_path, init_depth_map)
     write_pfm(init_prob_map_path, init_prob_map)
-    cv2.imwrite(out_ref_image_path, ref_image)
+    # cv2.imwrite(out_ref_image_path, ref_image)
+    cv2.imwrite(out_ref_image_path, ref_image[0].transpose(1,2,0))
 
-    out_init_cam_path = scene_folder + ('/cam_%08d_init.txt' % out_index)
+    # out_init_cam_path = scene_folder + ('/cam_%08d_init.txt' % out_index)
+    out_init_cam_path = scene_folder + ('/init_cam_path/cam_%08d_init.txt' % out_index)
+    if not osp.isdir(scene_folder + '/init_cam_path/'):
+        mkdir(scene_folder + '/init_cam_path/')
     init_cam_paras = ref_cam_paras.copy()
     init_cam_paras[1, :2, :3] *= (float(init_depth_map.shape[0]) / ref_image.shape[0])
     write_cam_dtu(out_init_cam_path, init_cam_paras)
@@ -65,20 +83,27 @@ def eval_file_logger(data_batch, preds, ref_img_path, folder, scene_name_index=-
                 floor_prob = np.squeeze(out_flow_prob_map[prob_height_ind, prob_width_ind, pred_floor], -1)
                 ceil_prob = np.squeeze(out_flow_prob_map[prob_height_ind, prob_width_ind, pred_ceil], -1)
                 flow_prob = floor_prob + ceil_prob
-                flow_prob_map_path = scene_folder + "/{:08d}_{}.pfm".format(out_index, k)
+                # flow_prob_map_path = scene_folder + "/{:08d}_{}.pfm".format(out_index, k)
+                flow_prob_map_path = scene_folder + "flow_prob_map/{:08d}_{}.pfm".format(out_index, k)
                 write_pfm(flow_prob_map_path, flow_prob)
 
             else:
                 out_flow_depth_map = preds[k][0, 0].cpu().numpy()
                 flow_depth_map_path = scene_folder + "/{:08d}_{}.pfm".format(out_index, k)
                 write_pfm(flow_depth_map_path, out_flow_depth_map)
-                out_flow_cam_path = scene_folder + "/cam_{:08d}_{}.txt".format(out_index, k)
+                # out_flow_cam_path = scene_folder + "/cam_{:08d}_{}.txt".format(out_index, k)
+                out_flow_cam_path = scene_folder + "/flow_cam_path/cam_{:08d}_{}.txt".format(out_index, k)
+                if not osp.isdir(scene_folder + '/flow_cam_path/'):
+                    mkdir(scene_folder + '/flow_cam_path/')
                 flow_cam_paras = ref_cam_paras.copy()
                 flow_cam_paras[1, :2, :3] *= (float(out_flow_depth_map.shape[0]) / float(ref_image.shape[0]))
                 write_cam_dtu(out_flow_cam_path, flow_cam_paras)
 
                 world_pts = depth2pts_np(out_flow_depth_map, flow_cam_paras[1][:3, :3], flow_cam_paras[0])
-                save_points(osp.join(scene_folder, "{:08d}_{}pts.xyz".format(out_index, k)), world_pts)
+                # save_points(osp.join(scene_folder, "{:08d}_{}pts.xyz".format(out_index, k)), world_pts)
+                if not osp.isdir(scene_folder + '/point_xyz/'):
+                    mkdir(scene_folder + '/point_xyz/')
+                save_points(osp.join(scene_folder, "point_xyz/{:08d}_{}pts.xyz".format(out_index, k)), world_pts)
     # save cost volume
     if save_prob_volume:
         probability_volume = preds["coarse_prob_volume"].cpu().numpy()[0]

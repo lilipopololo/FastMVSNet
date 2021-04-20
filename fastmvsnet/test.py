@@ -24,7 +24,7 @@ def parse_args():
     parser.add_argument(
         "--cfg",
         dest="config_file",
-        default="",
+        default="../configs/dtu.yaml",
         metavar="FILE",
         help="path to config file",
         type=str,
