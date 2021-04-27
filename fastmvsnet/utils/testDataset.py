@@ -18,11 +18,17 @@ class testDataset(Dataset):
 
     def __getitem__(self, index):
         path = self.paths[index]
-        image = cv2.imread(path["image_file"])  # 图片
-        cam = io.load_cam_dtu(path["cam_file"])
+        for view in range(self.num_view):
+            try:
+                image = cv2.imread(path["image_file"])
+                cam = io.load_cam_dtu(open(path["cam_file"]),
+                                      self.num_virtual_plane, self.interval_scale)
+            except:
+                print(path +"Wrong")
+
 
     def __len__(self):
-        return len(self.paths)  # 视角个数（实验只有一组，按照同种光照条件）
+        return len(self.paths)  # 视角个数（实验只有一组，按照同种光照条件）==num_view
 
     def _load_dataset(self, num_view):
         paths = []
