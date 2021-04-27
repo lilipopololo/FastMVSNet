@@ -11,23 +11,23 @@ class ImageConv(nn.Module):
         super(ImageConv, self).__init__()
         self.base_channels = base_channels
         self.out_channels = 8 * base_channels
+        # C H W
         self.conv0 = nn.Sequential(
             Conv2d(in_channels, base_channels, 3, 1, padding=1),
             Conv2d(base_channels, base_channels, 3, 1, padding=1),
         )
-
+        # 2C H,W/2+5
         self.conv1 = nn.Sequential(
             Conv2d(base_channels, base_channels * 2, 5, stride=2, padding=2),
             Conv2d(base_channels * 2, base_channels * 2, 3, 1, padding=1),
             Conv2d(base_channels * 2, base_channels * 2, 3, 1, padding=1),
         )
-
+        # 4C H,W/2+5 最后一个没有偏置
         self.conv2 = nn.Sequential(
             Conv2d(base_channels * 2, base_channels * 4, 5, stride=2, padding=2),
             Conv2d(base_channels * 4, base_channels * 4, 3, 1, padding=1),
             nn.Conv2d(base_channels * 4, base_channels * 4, 3, padding=1, bias=False)
         )
-
 
     def forward(self, imgs):
         out_dict = {}
@@ -42,16 +42,15 @@ class ImageConv(nn.Module):
         return out_dict
 
 
-
 class PropagationNet(nn.Module):
     def __init__(self, base_channels):
         super(PropagationNet, self).__init__()
         self.base_channels = base_channels
 
         self.img_conv = ImageConv(base_channels)
-        
+
         self.conv1 = nn.Sequential(
-            Conv2d(base_channels*4, base_channels * 4, 3, padding=1),
+            Conv2d(base_channels * 4, base_channels * 4, 3, padding=1),
             Conv2d(base_channels * 4, base_channels * 2, 3, 1, padding=1),
         )
 
@@ -62,10 +61,10 @@ class PropagationNet(nn.Module):
 
         self.conv3 = nn.Sequential(
             Conv2d(base_channels * 4, base_channels * 2, 3, 1, padding=1),
-            nn.Conv2d(base_channels*2, 9, 3, padding=1, bias=False)
+            nn.Conv2d(base_channels * 2, 9, 3, padding=1, bias=False)
         )
 
-        self.unfold = nn.Unfold(kernel_size=(3,3), stride=1, padding=0)
+        self.unfold = nn.Unfold(kernel_size=(3, 3), stride=1, padding=0)
 
     def forward(self, depth, img):
         img_featues = self.img_conv(img)
@@ -78,7 +77,7 @@ class PropagationNet(nn.Module):
         depth_unfold = self.unfold(depth_pad)
 
         b, c, h, w = prob.size()
-        prob = prob.view(b, 9, h*w)
+        prob = prob.view(b, 9, h * w)
 
         result_depth = torch.sum(depth_unfold * prob, dim=1)
         result_depth = result_depth.view(b, 1, h, w)
@@ -110,16 +109,18 @@ class VolumeConv(nn.Module):
     def forward(self, x):
         conv0_1 = self.conv0_1(x)
 
+        # 两个分支都是3 1 1卷积，导致输入输出不变，channel 1 -> 2 -> 4 -> 8
         conv1_0 = self.conv1_0(x)
         conv2_0 = self.conv2_0(conv1_0)
         conv3_0 = self.conv3_0(conv2_0)
-
+        # 在上面每一个卷积后面串联
         conv1_1 = self.conv1_1(conv1_0)
         conv2_1 = self.conv2_1(conv2_0)
         conv3_1 = self.conv3_1(conv3_0)
 
         conv4_0 = self.conv4_0(conv3_1)
 
+        # 两个分支相加，使用解码器变为原通道数(U型网络)
         conv5_0 = self.conv5_0(conv4_0 + conv2_1)
         conv6_0 = self.conv6_0(conv5_0 + conv1_1)
 

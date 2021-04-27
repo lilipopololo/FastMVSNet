@@ -35,13 +35,14 @@ class FeatureFetcher(nn.Module):
             else:
                 cam_extrinsics = cam_extrinsics.view(curr_batch_size, 3, 4)
                 R = torch.narrow(cam_extrinsics, 2, 0, 3)
+                # t取外参矩阵中的第4列，也就是位移矢量的位置，然后使用expand复制numpts个245760
                 t = torch.narrow(cam_extrinsics, 2, 3, 1).expand(curr_batch_size, 3, num_pts)
                 transformed_pts = torch.bmm(R, pts_expand) + t
                 transformed_pts = transformed_pts.type(torch.float).transpose(1, 2)
             x = transformed_pts[..., 0]
             y = transformed_pts[..., 1]
             z = transformed_pts[..., 2]
-
+            #除以比例参数获得x y 1
             normal_uv = torch.cat(
                 [torch.div(x, z).unsqueeze(-1), torch.div(y, z).unsqueeze(-1), torch.ones_like(x).unsqueeze(-1)],
                 dim=-1)
@@ -50,7 +51,7 @@ class FeatureFetcher(nn.Module):
 
             grid = (uv - 0.5).view(curr_batch_size, num_pts, 1, 2)
             grid[..., 0] = (grid[..., 0] / float(width - 1)) * 2 - 1.0
-            grid[..., 1] = (grid[..., 1] / float(height - 1)) * 2 - 1.0
+            grid[..., 1] = (grid[..., 1] / float(height - 1)) * 2 - 1.0 # 归一化
 
         # pts_feature = F.grid_sample(feature_maps, grid, mode=self.mode, padding_mode='border')
         # print("without border pad-----------------------")

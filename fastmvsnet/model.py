@@ -67,10 +67,13 @@ class FastMVSNet(nn.Module):
                           .view(1, 1, num_depth, 1))
         depths = torch.stack(depths, dim=0)  # (B, 1, 1, D, 1)
 
+        # 3 20480（160*128）
         feature_map_indices_grid = get_pixel_grids(feature_height, feature_width)
         # print("before:", feature_map_indices_grid.size())
+        # 首先恢复成行列的形式 1 3 H W，隔行隔列取得对应坐标 1 2 H/2 W/2
         feature_map_indices_grid = feature_map_indices_grid.view(1, 3, feature_height, feature_width)[:, :, ::2, ::2].contiguous()
         # print("after:", feature_map_indices_grid.size())
+        # 在batch维度上复制成 b 1 3 5120
         feature_map_indices_grid = feature_map_indices_grid.view(1, 1, 3, -1).expand(batch_size, 1, 3, -1).to(img_list.device)
 
         ref_cam_intrinsic = cam_intrinsic[:, 0, :, :].clone()
@@ -78,7 +81,7 @@ class FastMVSNet(nn.Module):
 
         cam_points = (uv.unsqueeze(3) * depths).view(batch_size, 1, 3, -1)  # (B, 1, 3, D*FH*FW)
         world_points = torch.matmul(R_inv[:, 0:1, :, :], cam_points - t[:, 0:1, :, :]).transpose(1, 2).contiguous() \
-            .view(batch_size, 3, -1)  # (B, 3, D*FH*FW)
+            .view(batch_size, 3, -1)  # (B, 3, num_depths*H*W(245760))
 
         preds["world_points"] = world_points
 
@@ -97,7 +100,7 @@ class FastMVSNet(nn.Module):
         avg_point_features = torch.mean(point_features, dim=1)
         avg_point_features_2 = torch.mean(point_features ** 2, dim=1)
 
-        point_features = avg_point_features_2 - (avg_point_features ** 2)
+        point_features = avg_point_features_2 - (avg_point_features ** 2) # 求得方差作为点的特征方差等于平方的均值减去均值的平方
 
         cost_volume = point_features.view(batch_size, feature_channels, num_depth, feature_height // 2, feature_width // 2)
 
