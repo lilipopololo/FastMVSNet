@@ -1,7 +1,7 @@
 import cv2
 import torch
 import os
-import io
+import fastmvsnet.utils.io as io
 from torch.utils.data import Dataset, DataLoader
 
 
@@ -19,7 +19,7 @@ class testDataset(Dataset):
     def __getitem__(self, index):
         path = self.paths[index]
         image = cv2.imread(path["image_file"])  # 图片
-        cam = io.load_cam_dtu
+        cam = io.load_cam_dtu(path["cam_file"])
 
     def __len__(self):
         return len(self.paths)  # 视角个数（实验只有一组，按照同种光照条件）
@@ -42,8 +42,6 @@ class testDataset(Dataset):
 
         return paths
 
-
-# %%
 
 
 if __name__ == "main":
