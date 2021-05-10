@@ -163,12 +163,10 @@ class DTU_Test_Set(Dataset):
     std = torch.tensor([84.45612252, 93.22252387, 80.08551226])
 
     cluster_file_path = "Cameras/pair.txt"
-    # cluster_file_path = "pair.txt"
 
     def __init__(self, root_dir, dataset_name,
                  num_view=3,
-                 # height=1152, width=1600,
-                 height=1200, width=1600,
+                 height=1152, width=1600,
                  num_virtual_plane=128,
                  interval_scale=1.6,
                  base_image_size=64,
@@ -182,7 +180,6 @@ class DTU_Test_Set(Dataset):
         self.height = height
         self.width = width
         self.depth_folder = depth_folder
-        self.cluster_list=[]
 
         self.cluster_file_path = osp.join(root_dir, self.cluster_file_path)
         self.cluster_list = open(self.cluster_file_path).read().split()
@@ -198,11 +195,8 @@ class DTU_Test_Set(Dataset):
         path_list = []
         for ind in dataset:
             image_folder = osp.join(self.root_dir, "Eval/Rectified/scan{}".format(ind))
-            # image_folder = osp.join(self.root_dir, "scan{}/image".format(ind))
-            cam_folder = osp.join(self.root_dir, "scan{}/cams".format(ind))
+            cam_folder = osp.join(self.root_dir, "Cameras")
             depth_folder = osp.join(self.depth_folder, "scan{}".format(ind))
-            self.cluster_file_path = osp.join(self.root_dir,"scan{}/pair.txt".format(ind))
-            self.cluster_list = open(self.cluster_file_path).read().split()
 
             for lighting_ind in lighting_set:
                 # for each reference image
@@ -216,7 +210,6 @@ class DTU_Test_Set(Dataset):
                     # ref image
                     ref_index = int(self.cluster_list[22 * p + 1])
                     ref_image_path = osp.join(
-                        # image_folder, "{:03d}{}.jpg".format(ref_index + 1, lighting_ind))
                         image_folder, "rect_{:03d}_{}_r5000.png".format(ref_index + 1, lighting_ind))
                     ref_cam_path = osp.join(cam_folder, "{:08d}_cam.txt".format(ref_index))
                     ref_depth_path = osp.join(depth_folder, "depth_map_{:04d}.pfm".format(ref_index))
@@ -229,7 +222,6 @@ class DTU_Test_Set(Dataset):
                     for view in range(self.num_view - 1):
                         view_index = int(self.cluster_list[22 * p + 2 * view + 3])
                         view_image_path = osp.join(
-                            # image_folder, "{:03d}{}.png".format(view_index + 1, lighting_ind))
                             image_folder, "rect_{:03d}_{}_r5000.png".format(view_index + 1, lighting_ind))
                         view_cam_path = osp.join(cam_folder, "{:08d}_cam.txt".format(view_index))
                         view_depth_path = osp.join(depth_folder, "depth_map_{:04d}.pfm".format(view_index))

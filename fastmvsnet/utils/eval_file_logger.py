@@ -51,8 +51,8 @@ def eval_file_logger(data_batch, preds, ref_img_path, folder, scene_name_index=-
 
     write_pfm(init_depth_map_path, init_depth_map)
     write_pfm(init_prob_map_path, init_prob_map)
-    # cv2.imwrite(out_ref_image_path, ref_image)
-    cv2.imwrite(out_ref_image_path, ref_image[0].transpose(1,2,0))
+    cv2.imwrite(out_ref_image_path, ref_image)
+    # cv2.imwrite(out_ref_image_path, ref_image[0].transpose(1,2,0))
 
     # out_init_cam_path = scene_folder + ('/cam_%08d_init.txt' % out_index)
     out_init_cam_path = scene_folder + ('/init_cam_path/cam_%08d_init.txt' % out_index)

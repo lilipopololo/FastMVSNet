@@ -229,8 +229,11 @@ def depth_map_fusion(point_folder, fusibile_exe_path, disp_thresh, num_consisten
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
+    # parser.add_argument('--eval_folder', type=str,
+    #                     default='data/dtu/Eval/')
     parser.add_argument('--eval_folder', type=str,
-                        default='data/dtu/Eval/')
+                        default='E:/dataset/dtu_training/dtu_training/mvs_training/dtu/Eval')
+
     parser.add_argument('--fusibile_exe_path', type=str, default='/root/projects/fusibile/fusibile')
     parser.add_argument('--init_prob_threshold', type=float, default=0.2)
     parser.add_argument('--flow_prob_threshold', type=float, default=0.1)
