@@ -28,7 +28,7 @@ def parse_args():
     parser.add_argument(
         "--cfg",
         dest="config_file",
-        default="../configs/dtu.yaml",
+        default="../configs/5_8_gn.yaml",
         metavar="FILE",
         help="path to config file",
         type=str,
@@ -273,6 +273,8 @@ def main():
     cfg.merge_from_list(args.opts)
     cfg.freeze()
 
+    # 默认是config.py文件下的"@"
+    # 下面一段通过splitext分割点两端通过replace赋值修改成默认的路径
     output_dir = cfg.OUTPUT_DIR
     if output_dir:
         config_path = osp.splitext(args.config_file)[0]

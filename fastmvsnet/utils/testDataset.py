@@ -73,7 +73,7 @@ class testDataset(Dataset):
 
 
 if __name__ == "main":
-    root_path = "E:\dataset\dtu_training\dtu_training\mvs_training\dtu"
+    root_path = "E:\dataset\dtu-test-1200\myutest"
     dataset = testDataset()
     net = FastMVSNet(
         img_base_channels=8,

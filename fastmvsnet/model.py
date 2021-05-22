@@ -50,7 +50,7 @@ class FastMVSNet(nn.Module):
         depth_end = depth_start + (num_depth - 1) * depth_interval
 
         batch_size, num_view, img_channel, img_height, img_width = list(img_list.size())
-
+        ######### stage1.1 feature volume
         coarse_feature_maps = []
         for i in range(num_view):
             curr_img = img_list[:, i, :, :, :]
@@ -60,13 +60,14 @@ class FastMVSNet(nn.Module):
         feature_list = torch.stack(coarse_feature_maps, dim=1)
 
         feature_channels, feature_height, feature_width = list(curr_feature_map.size())[1:]
-
+        ########### 构造深度空间
         depths = []
         for i in range(batch_size):
             depths.append(torch.linspace(depth_start[i], depth_end[i], num_depth, device=img_list.device) \
                           .view(1, 1, num_depth, 1))
         depths = torch.stack(depths, dim=0)  # (B, 1, 1, D, 1)
-
+        ########### 构造分像素的格尺（长宽由坐标值确定）,并且通过变换变成隔行隔列的坐标格尺，
+        # 并且按照numview和batch复制。乘上参考矩阵的实现参考视图的特征投影到世界点
         # 3 20480（160*128）
         feature_map_indices_grid = get_pixel_grids(feature_height, feature_width)
         # print("before:", feature_map_indices_grid.size())
@@ -87,7 +88,8 @@ class FastMVSNet(nn.Module):
 
         num_world_points = world_points.size(-1)
         assert num_world_points == feature_height * feature_width * num_depth / 4
-
+        ########## feature_fetcher将ref投影到世界点的坐标重新投影到各个视角(grid_sample将featuremap重投影作为点特征)
+        #
         point_features = self.feature_fetcher(feature_list, world_points, cam_intrinsic, cam_extrinsic)
         ref_feature = coarse_feature_maps[0]
         #print("before ref feature:", ref_feature.size())

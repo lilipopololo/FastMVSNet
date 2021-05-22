@@ -167,6 +167,48 @@ class Conv3d(nn.Module):
         if self.bn is not None:
             init_bn(self.bn)
 
+### 瞎掰伙的产物
+class Conv3d_gn(nn.Module):
+    """Applies a 3D convolution (optionally with batch normalization and relu activation)
+    over an input signal composed of several input planes.
+
+    Attributes:
+        conv (nn.Module): convolution module
+        gn (nn.Module): group normalization module
+        relu (bool): whether to activate by relu
+
+    Notes:
+        Default momentum for batch normalization is set to be 0.01,
+
+    """
+
+    def __init__(self, in_channels, out_channels, kernel_size, stride=1,
+                 relu=True, gn=True, group_channel=8, bn_momentum=0.1, **kwargs):
+        super(Conv3d, self).__init__()
+        self.out_channels = out_channels
+        self.kernel_size = kernel_size
+        assert stride in [1, 2]
+        self.stride = stride
+
+        self.conv = nn.Conv3d(in_channels, out_channels, kernel_size, stride=stride,
+                              bias=(not gn), **kwargs)
+        G = max(1, out_channels // group_channel)
+        self.gn = nn.GroupNorm(G, out_channels) if gn else None
+        self.relu = relu
+
+        self.init_weights()
+
+    def forward(self, x):
+        x = self.conv(x)
+        if self.gn is not None:
+            x = self.gn(x)
+        if self.relu:
+            x = F.relu(x, inplace=True)
+        return x
+
+    def init_weights(self):
+        """default initialization"""
+        init_uniform(self.conv)
 
 class Deconv2d(nn.Module):
     """Applies a 2D deconvolution (optionally with batch normalization and relu activation)

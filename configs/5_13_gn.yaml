@@ -37,6 +37,6 @@ TRAIN:
   CHECKPOINT_PERIOD: 1
   LOG_PERIOD: 10
 TEST:
-  WEIGHT: "D:/srccode/FastMVSNet/outputs/pretrained.pth"
+  WEIGHT: "../outputs/5_13_gn/model_016.pth"
 
 

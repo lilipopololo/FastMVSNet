@@ -13,20 +13,28 @@ class ImageConv(nn.Module):
         self.out_channels = 8 * base_channels
         # C H W
         self.conv0 = nn.Sequential(
-            Conv2d(in_channels, base_channels, 3, 1, padding=1),
-            Conv2d(base_channels, base_channels, 3, 1, padding=1),
+            # Conv2d(in_channels, base_channels, 3, 1, padding=1),
+            # Conv2d(base_channels, base_channels, 3, 1, padding=1),
+            Conv2d_gn(in_channels, base_channels, 3, 1, padding=1),
+            Conv2d_gn(base_channels, base_channels, 3, 1, padding=1),
         )
-        # 2C H,W/2+5
+        # 2C H,W/2
         self.conv1 = nn.Sequential(
-            Conv2d(base_channels, base_channels * 2, 5, stride=2, padding=2),
-            Conv2d(base_channels * 2, base_channels * 2, 3, 1, padding=1),
-            Conv2d(base_channels * 2, base_channels * 2, 3, 1, padding=1),
+            # Conv2d(base_channels, base_channels * 2, 5, stride=2, padding=2),
+            # Conv2d(base_channels * 2, base_channels * 2, 3, 1, padding=1),
+            # Conv2d(base_channels * 2, base_channels * 2, 3, 1, padding=1),
+            Conv2d_gn(base_channels, base_channels * 2, 5, stride=2, padding=2),
+            Conv2d_gn(base_channels * 2, base_channels * 2, 3, 1, padding=1),
+            Conv2d_gn(base_channels * 2, base_channels * 2, 3, 1, padding=1),
         )
-        # 4C H,W/2+5 最后一个没有偏置
+        # 4C H,W/2=f/4
         self.conv2 = nn.Sequential(
-            Conv2d(base_channels * 2, base_channels * 4, 5, stride=2, padding=2),
-            Conv2d(base_channels * 4, base_channels * 4, 3, 1, padding=1),
-            nn.Conv2d(base_channels * 4, base_channels * 4, 3, padding=1, bias=False)
+            # Conv2d(base_channels * 2, base_channels * 4, 5, stride=2, padding=2),
+            # Conv2d(base_channels * 4, base_channels * 4, 3, 1, padding=1),
+            Conv2d_gn(base_channels * 2, base_channels * 4, 5, stride=2, padding=2),
+            Conv2d_gn(base_channels * 4, base_channels * 4, 3, 1, padding=1),
+            # nn.Conv2d(base_channels * 4, base_channels * 4, 3, padding=1, bias=False)
+            Conv2d_gn(base_channels * 4, base_channels * 4, 3, padding=1,)
         )
 
     def forward(self, imgs):
@@ -50,27 +58,50 @@ class PropagationNet(nn.Module):
         self.img_conv = ImageConv(base_channels)
 
         self.conv1 = nn.Sequential(
-            Conv2d(base_channels * 4, base_channels * 4, 3, padding=1),
-            Conv2d(base_channels * 4, base_channels * 2, 3, 1, padding=1),
+            # Conv2d(base_channels * 4, base_channels * 4, 3, padding=1),
+            # Conv2d(base_channels * 4, base_channels * 2, 3, 1, padding=1),
+            ## 5-13 addtion
+            # Conv2d_gn(base_channels, base_channels * 2, 3, 1, padding=1),
+            # Conv2d_gn(base_channels * 2, base_channels * 2, 5, 2, padding=2),
+            # Conv2d_gn(base_channels * 2, base_channels * 2, 5, 2, padding=2),
+            # Conv2d_gn(base_channels * 2, base_channels * 2, 3, 1, padding=1),
+            # Conv2d_gn(base_channels * 2, 9, 3, 1, padding=1),
         )
 
         self.conv2 = nn.Sequential(
-            Conv2d(base_channels * 4, base_channels * 2, 3, 1, padding=1),
-            Conv2d(base_channels * 2, base_channels * 2, 3, 1, padding=1),
+            # Conv2d(base_channels * 4, base_channels * 2, 3, 1, padding=1),
+            # Conv2d(base_channels * 2, base_channels * 2, 3, 1, padding=1),
+            ## 5-13 addition
+            # Conv2d_gn(base_channels * 2, base_channels * 2, 3, 1, padding=1),
+            # Conv2d_gn(base_channels * 2, base_channels * 2, 5, 2, padding=2),
+            # Conv2d_gn(base_channels * 2, base_channels * 2, 3, 1, padding=1),
+            # Conv2d_gn(base_channels * 2, 9, 3, 1, padding=1),
         )
 
         self.conv3 = nn.Sequential(
-            Conv2d(base_channels * 4, base_channels * 2, 3, 1, padding=1),
-            nn.Conv2d(base_channels * 2, 9, 3, padding=1, bias=False)
+            # Conv2d(base_channels * 4, base_channels * 2, 3, 1, padding=1),
+            # nn.Conv2d(base_channels * 2, 9, 3, padding=1, bias=False)
+            Conv2d_gn(base_channels * 4, base_channels * 2, 3, 1, padding=1),
+            Conv2d_gn(base_channels * 2, 9, 3, padding=1)
         )
 
+        ## 5-13 addition
+        # self.conv4 =nn.Sequential(
+        #     Conv2d_gn(9, 9, 3, padding=1)
+        # )
         self.unfold = nn.Unfold(kernel_size=(3, 3), stride=1, padding=0)
 
     def forward(self, depth, img):
         img_featues = self.img_conv(img)
-        img_conv2 = img_featues["conv2"]
+        img_conv2 = img_featues["conv2"]  # 1/4(c4)
+        # img_conv1 = img_featues["conv1"]  # 1/2(c2)
+        # img_conv0 = img_featues["conv0"]  # 1(c1)
 
         x = self.conv3(img_conv2)
+        # y = self.conv2(img_conv1)
+        # z = self.conv1(img_conv0)
+        # x = self.conv4(x+y+z)
+
         prob = F.softmax(x, dim=1)
 
         depth_pad = F.pad(depth, (1, 1, 1, 1), mode='replicate')

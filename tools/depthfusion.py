@@ -13,7 +13,7 @@ from struct import *
 import sys
 import os
 
-sys.path.append("/root/projects/FastMVSNet")
+# sys.path.append("/root/projects/FastMVSNet")
 from fastmvsnet.utils.io import *
 
 
@@ -131,7 +131,8 @@ def mvsnet_to_gipuma(scene_folder, gipuma_point_folder, name, view_num):
 
     for v in range(view_num):
         # convert cameras
-        in_cam_file = os.path.join(scene_folder, 'cam_{:08d}_{}.txt'.format(v, name))
+        # in_cam_file = os.path.join(scene_folder, 'cam_{:08d}_{}.txt'.format(v, name))
+        in_cam_file = os.path.join(scene_folder, 'flow_cam_path/cam_{:08d}_{}.txt'.format(v, name))
         out_cam_file = os.path.join(gipuma_cam_folder, '{:08d}.jpg.P'.format(v))
         mvsnet_to_gipuma_cam(in_cam_file, out_cam_file)
 
@@ -146,7 +147,8 @@ def mvsnet_to_gipuma(scene_folder, gipuma_point_folder, name, view_num):
         fake_colmap_normal(out_depth_dmb, fake_normal_dmb)
 
         # copy images to gipuma image folder
-        in_image_file = os.path.join(scene_folder, '{:08d}.jpg'.format(v))
+        # in_image_file = os.path.join(scene_folder, '{:08d}.jpg'.format(v))
+        in_image_file = os.path.join(scene_folder, '{:08d}_{}.png'.format(v,name))
         out_image_file = os.path.join(gipuma_image_folder, '{:08d}.jpg'.format(v))
         in_image = cv2.imread(in_image_file)
 
@@ -187,7 +189,8 @@ def probability_filter2(scene_folder, init_prob_threshold, flow_prob_threshold, 
     name_bak = name
     for v in range(view_num):
         # name = 'init'
-        init_prob_map_path = os.path.join(scene_folder, "{:08d}_init_prob.pfm".format(v))
+        # init_prob_map_path = os.path.join(scene_folder, "{:08d}_init_prob.pfm".format(v))
+        init_prob_map_path = os.path.join(scene_folder, "init_prob_map/{:08d}_init_prob.pfm".format(v))
         init_depth_map_path = os.path.join(scene_folder, "{:08d}_{}.pfm".format(v, name))
         # name = name_bak
         out_depth_map_path = os.path.join(scene_folder, "{:08d}_{}_prob_filtered.pfm".format(v, name))
@@ -234,15 +237,15 @@ if __name__ == '__main__':
     parser.add_argument('--eval_folder', type=str,
                         default='E:/dataset/dtu_training/dtu_training/mvs_training/dtu/Eval')
 
-    parser.add_argument('--fusibile_exe_path', type=str, default='/root/projects/fusibile/fusibile')
+    parser.add_argument('--fusibile_exe_path', type=str, default='D:/srccode/fusibile/build/Release/fusibile')
     parser.add_argument('--init_prob_threshold', type=float, default=0.2)
     parser.add_argument('--flow_prob_threshold', type=float, default=0.1)
     parser.add_argument('--disp_threshold', type=float, default=0.12)
     parser.add_argument('--num_consistent', type=int, default=3)
     parser.add_argument("-v", '--view_num', type=int, default=49)
-    parser.add_argument("-n", '--name', type=str)
+    parser.add_argument("-n", '--name', default="flow1", type=str)
     parser.add_argument("-m", '--inter_mode', type=str, default='LANCZOS4')
-    parser.add_argument("-f", '--depth_folder', type=str)
+    parser.add_argument("-f", '--depth_folder', default="E:/dataset/dtu_training/dtu_training/mvs_training/dtu/Eval/Rectified/dtu" , type=str)
     args = parser.parse_args()
 
     eval_folder = args.eval_folder
@@ -301,7 +304,7 @@ if __name__ == '__main__':
         cur_dirs = os.listdir(point_folder)
         filter_dirs = list(filter(lambda x:x.startswith("consistencyCheck"), cur_dirs))
 
-        assert (len(filter_dirs) == 1)
+        # assert (len(filter_dirs) == 1)
 
         rename_cmd = "cp " + osp.join(point_folder, filter_dirs[0]) + "/final3d_model.ply {}/{}_ip{}_fp{}_d{}_nc{}_{}.ply".format(
             out_point_folder, scene, init_prob_threshold, flow_prob_threshold, disp_threshold, num_consistent,

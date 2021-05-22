@@ -17,8 +17,8 @@ def eval_file_logger(data_batch, preds, ref_img_path, folder, scene_name_index=-
 
     scene = l[scene_name_index]
 
-    # scene_folder = osp.join(eval_folder, folder, scene)
-    scene_folder = osp.join(eval_folder+"/test/", scene)
+    scene_folder = osp.join(eval_folder, folder, scene)
+    # scene_folder = osp.join(eval_folder+"/test/", scene)
 
     if not osp.isdir(scene_folder):
         mkdir(scene_folder)

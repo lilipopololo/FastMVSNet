@@ -24,7 +24,7 @@ MODEL:
 SCHEDULER:
   TYPE: "StepLR"
   INIT_EPOCH: 4
-  MAX_EPOCH: 16
+  MAX_EPOCH: 32
   StepLR:
     gamma: 0.9
     step_size: 2
@@ -37,6 +37,6 @@ TRAIN:
   CHECKPOINT_PERIOD: 1
   LOG_PERIOD: 10
 TEST:
-  WEIGHT: "D:/srccode/FastMVSNet/outputs/pretrained.pth"
+  WEIGHT: "../outputs/5_8_gn/model_016.pth"
 
 
