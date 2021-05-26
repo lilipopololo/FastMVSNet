@@ -88,7 +88,8 @@ class FastMVSNet(nn.Module):
 
         num_world_points = world_points.size(-1)
         assert num_world_points == feature_height * feature_width * num_depth / 4
-        ########## feature_fetcher将ref投影到世界点的坐标重新投影到各个视角(grid_sample将featuremap重投影作为点特征)
+        ########## feature_fetcher将ref投影到世界点的坐标重新投影到各个视角(包括参考视角)
+        # (grid_sample将featuremap(代表参考视角的深度空间)重投影作为各个视角上的点特征（强化参考视角和其他视角的关系？）)
         #
         point_features = self.feature_fetcher(feature_list, world_points, cam_intrinsic, cam_extrinsic)
         ref_feature = coarse_feature_maps[0]
