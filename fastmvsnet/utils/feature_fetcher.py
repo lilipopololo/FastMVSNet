@@ -52,13 +52,17 @@ class FeatureFetcher(nn.Module):
             grid = (uv - 0.5).view(curr_batch_size, num_pts, 1, 2)
             grid[..., 0] = (grid[..., 0] / float(width - 1)) * 2 - 1.0
             grid[..., 1] = (grid[..., 1] / float(height - 1)) * 2 - 1.0 # 归一化
-
+            ## grid (B*V,N(H*W),1,2(x,y))
+            # (N, C, Hin, Win),(N,Hout​,Wout​,2)=>(N,C,H out,W out)
+            # (N, C, Hin, Win),(N,Hout * Wout​, 1​,2)=>(N,C,H out*W out ,1 )
         # pts_feature = F.grid_sample(feature_maps, grid, mode=self.mode, padding_mode='border')
         # print("without border pad-----------------------")
-        pts_feature = F.grid_sample(feature_maps, grid, mode=self.mode)
-        pts_feature = pts_feature.squeeze(3)
+        pts_feature = F.grid_sample(feature_maps, grid, mode=self.mode) # (B*V,C,H*W,1)
+        pts_feature = pts_feature.squeeze(3) #(B*V,C,H*W,)
 
-        pts_feature = pts_feature.view(batch_size, num_view, channels, num_pts)
+        pts_feature = pts_feature.view(batch_size, num_view, channels, num_pts) # (B*V,C,H*W)=>(B,V,C,H*W)
+        # (feature map是在参考视角上表现各个视角特征（深度）的一种形式，这个函数又将这些特征通过wrap的方法投影回各个
+        # 视角的坐标系中)
 
         return pts_feature
 

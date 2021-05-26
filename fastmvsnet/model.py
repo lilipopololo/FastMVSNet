@@ -57,7 +57,7 @@ class FastMVSNet(nn.Module):
             curr_feature_map = self.coarse_img_conv(curr_img)["conv2"]
             coarse_feature_maps.append(curr_feature_map)
 
-        feature_list = torch.stack(coarse_feature_maps, dim=1)
+        feature_list = torch.stack(coarse_feature_maps, dim=1) ## (B,V,32,H/4,W/4)
 
         feature_channels, feature_height, feature_width = list(curr_feature_map.size())[1:]
         ########### 构造深度空间
@@ -91,25 +91,27 @@ class FastMVSNet(nn.Module):
         ########## feature_fetcher将ref投影到世界点的坐标重新投影到各个视角(包括参考视角)
         # (grid_sample将featuremap(代表参考视角的深度空间)重投影作为各个视角上的点特征（强化参考视角和其他视角的关系？）)
         #
-        point_features = self.feature_fetcher(feature_list, world_points, cam_intrinsic, cam_extrinsic)
-        ref_feature = coarse_feature_maps[0]
+        point_features = self.feature_fetcher(feature_list, world_points, cam_intrinsic, cam_extrinsic)  # (B,V,C,(x,y,z)H*W)
+        ref_feature = coarse_feature_maps[0]()  # (B,32,H/4,W/4)
         #print("before ref feature:", ref_feature.size())
-        ref_feature = ref_feature[:, :, ::2,::2].contiguous()
+        ref_feature = ref_feature[:, :, ::2,::2].contiguous()  # (B,32,H/8,W/8)
         #print("after ref feature:", ref_feature.size())
         ref_feature = ref_feature.unsqueeze(2).expand(-1, -1, num_depth, -1, -1)\
-                        .contiguous().view(batch_size,feature_channels,-1)
-        point_features[:, 0, :, :] = ref_feature
+                        .contiguous().view(batch_size,feature_channels,-1) # (B,32,numdep,H/8,W/8)=>(B,32,numdep * H/8 * W/8 )
+        point_features[:, 0, :, :] = ref_feature # (参考视角的特征通过wrap重投影回参考相机会造成不准确，这里直接赋值原先的特征)
 
-        avg_point_features = torch.mean(point_features, dim=1)
+        avg_point_features = torch.mean(point_features, dim=1) # 对各个视角的特征求均值
         avg_point_features_2 = torch.mean(point_features ** 2, dim=1)
 
-        point_features = avg_point_features_2 - (avg_point_features ** 2) # 求得方差作为点的特征方差等于平方的均值减去均值的平方
+        point_features = avg_point_features_2 - (avg_point_features ** 2) # 求得方差作为点的特征（方差=平方的均值减去均值的平方
 
-        cost_volume = point_features.view(batch_size, feature_channels, num_depth, feature_height // 2, feature_width // 2)
+        cost_volume = point_features.view(batch_size, feature_channels, num_depth, feature_height // 2, feature_width // 2)   # 上一步将numview平均掉
+        # 了所以这一步中不需要存在numview，将最后的代价量展开成(B,32,numdep,H/2,W/2) (numdep默认192)
 
-        filtered_cost_volume = self.coarse_vol_conv(cost_volume).squeeze(1)
+        filtered_cost_volume = self.coarse_vol_conv(cost_volume).squeeze(1)  # 3d卷积和逆卷积（unet）得到(B,1,numdep,H/2,W/2)
+        # (B,1,numdep,H/2,W/2) => (B,numdep,H/2,W/2)
 
-        probability_volume = F.softmax(-filtered_cost_volume, dim=1)
+        probability_volume = F.softmax(-filtered_cost_volume, dim=1)  # numdep维度上softmax将192个深度平面表示成prob
         depth_volume = []
         for i in range(batch_size):
             depth_array = torch.linspace(depth_start[i], depth_end[i], num_depth, device=depth_start.device)
